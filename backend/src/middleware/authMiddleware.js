@@ -11,7 +11,6 @@ const protect = async (req, res, next) => {
   let token;
 
   // Check if token exists in Authorization header
-  // Format: "Bearer <token>"
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
@@ -30,12 +29,14 @@ const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Get user from token and attach to request
-    // This makes user available in all route handlers
     req.user = await User.findById(decoded.id).select('-password');
 
     if (!req.user) {
       return next(new ErrorResponse('User not found', 404));
     }
+
+    // IMPORTANT: Add this line to ensure req.user.id exists
+    req.user.id = req.user._id.toString();
 
     // Token is valid, continue to next middleware/route handler
     next();
@@ -43,7 +44,6 @@ const protect = async (req, res, next) => {
     return next(new ErrorResponse('Not authorized to access this route', 401));
   }
 };
-
 /**
  * Grant access to specific roles (admin, user, etc.)
  * Use after protect middleware
